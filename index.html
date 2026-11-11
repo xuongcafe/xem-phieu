@@ -1,0 +1,25 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phiếu giao hàng</title>
+<style>@page{size:210mm 297mm;margin:5mm}*{box-sizing:border-box}body{margin:0;background:#fff;color:#1f2937;font-family:Inter,Arial,sans-serif}.wrap{width:199mm;max-width:100%;margin:0 auto;padding:3mm;font-size:13px;line-height:1.3}header{display:flex;flex-wrap:wrap;gap:4px 8px;border-bottom:1px solid #3C2415;padding-bottom:6px;margin-bottom:8px}.brand{display:flex;gap:4px;width:100%}.cinfo{flex:1;text-align:center}.cname{font-size:15px;font-weight:bold}.cmeta{font-size:10px}h1{font-size:18px;width:100%;text-align:center;margin:4px 0 0;color:#3C2415}.meta{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;padding:6px 0;font-size:11px}.customer{margin:5px 0;padding:7px;background:#fffaf0;border:1px solid #e7dcc0;border-radius:4px}.customer h2{font-size:13px;margin:0 0 4px;color:#3c2415}table{width:100%;border-collapse:collapse;margin-top:6px;font-size:11px}th,td{border:1px solid #d1d5db;padding:5px;vertical-align:top}th{background:#f5efe3;text-align:left}.num{text-align:right;white-space:nowrap}.total{text-align:right;font-weight:bold;margin-top:7px;font-size:13px}.sign{display:grid;grid-template-columns:1fr 1fr;margin-top:8px;font-weight:bold}.sign div:last-child{text-align:right}.btn{display:block;margin:18px auto;padding:10px 22px;border-radius:999px;background:#3C2415;color:#fff;font-weight:700;border:none;font-size:14px}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.btn{display:none}}</style>
+</head><body><div id="root" style="text-align:center;padding:40px;color:#666">Đang tải phiếu...</div>
+<script>
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function fmt(n){n=Number(n)||0;return (Math.round(n*100)/100).toString();}
+function calcKg(p){const m=String(p.quyCach||"").match(/([0-9]+(?:\.[0-9]+)?)/);const u=m?Number(m[1]):0;return u>0?(Number(p.soGoi)||0)*u:(Number(p.soKg)||0);}
+try{
+  const b64=new URLSearchParams(location.search).get("d")||"";
+  if(!b64) throw new Error("no data");
+  let s=b64.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
+  const json=decodeURIComponent(escape(atob(s)));
+  const o=JSON.parse(json);
+  const t=o;
+  const kh=t.kh||{}; const ct=t.ct||{}; const sp=t.sp||[];
+  const meta=[ct.sdt||"",ct.mail||"",ct.dc||""].filter(Boolean).join(" · ");
+  const khHtml=[kh.ten?`<div><b>• ${esc(kh.ten)}</b></div>`:"",kh.ma?`<div>${esc(kh.ma)}</div>`:"",kh.dc?`<div>${esc(kh.dc)}</div>`:"",kh.nn?`<div><b>• ${esc(kh.nn)}</b></div>`:"<div>-</div>",kh.sdt?`<div>${esc(kh.sdt)}</div>`:"",kh.xe?`<div>${esc(kh.xe)}</div>`:""].join("");
+  let rows="", tongKg=0, tongSL=0;
+  sp.forEach((r,i)=>{const p={maKho:r[0]||"",maFast:r[1]||"",tenSP:r[2]||"",quyCach:r[3]||"",ngaySX:r[4]||"",soGoi:r[5]||0,donVi:r[6]||"",soKg:r[7]||0}; const kg=calcKg(p); tongKg+=kg; tongSL+=Number(p.soGoi)||0;
+    rows+=`<tr><td>${i+1}</td><td>${esc(p.maFast)}</td><td>${p.maKho?`<strong>${esc(p.maKho)}</strong><br>`:""}${esc(p.tenSP)}</td><td>${esc(p.quyCach||"-")}</td><td>${esc(p.ngaySX||"-")}</td><td>${fmt(p.soGoi)} ${esc(p.donVi)}</td><td class="num">${fmt(kg)} kg</td></tr>`;});
+  if(!rows) rows=`<tr><td colspan="7">Không có sản phẩm</td></tr>`;
+  if(t.tong) tongKg=Number(t.tong)||tongKg;
+  document.getElementById("root").innerHTML=`<div class="wrap"><header><div class="brand">${ct.logo?`<img src="${esc(ct.logo)}" style="width:40px;height:40px;object-fit:contain">`:`<div style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999">LOGO</div>`}<div class="cinfo"><div class="cname">${esc(ct.ten||"RUNAM")}</div>${meta?`<div class="cmeta">${esc(meta)}</div>`:""}</div></div><h1>PHIẾU GIAO HÀNG</h1></header><div class="meta"><div><b>Số phiếu:</b> ${esc(t.soPhieu||"-")}</div><div><b>Số phiếu xuất:</b> ${esc(t.soPhieuXuat||"-")}</div><div><b>Số PO:</b> ${esc(t.soPO||"-")}</div><div><b>Ngày giao:</b> ${esc(t.ngayGiao||"-")}</div></div><section class="customer"><h2>THÔNG TIN KHÁCH HÀNG</h2>${khHtml}</section><table><thead><tr><th>STT</th><th>Mã Fast</th><th>Sản phẩm</th><th>Quy cách</th><th>NSX</th><th>Số lượng</th><th>Kg</th></tr></thead><tbody>${rows}</tbody></table><div class="total"><div>Tổng số lượng: ${fmt(tongSL)}</div><div>Tổng khối lượng: ${fmt(tongKg)} kg</div><div>Gross Weight ______________kg</div></div><div class="sign"><div>Người giao hàng</div><div>Người nhận hàng</div></div><button class="btn" onclick="window.print()">In phiếu</button></div>`;
+}catch(e){document.getElementById("root").innerHTML=`<div style="text-align:center;padding:40px;color:#991b1b">Không đọc được mã QR. Hãy quét lại phiếu gốc.</div>`;}
+</script></body></html>
