@@ -7,62 +7,21 @@ function fmt(n){n=Number(n)||0;return (Math.round(n*100)/100).toString();}
 function fmtDMY(v){var s=String(v||"").trim();var m=s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);if(m) return String(m[3]).padStart(2,"0")+"/"+String(m[2]).padStart(2,"0")+"/"+m[1];return s;}
 function calcKg(p){var q=String(p.quyCach||"").toLowerCase();var m=q.match(/([0-9]+(?:\.[0-9]+)?)/);var u=m?Number(m[1]):0;if(!u) return Number(p.soKg)||0;if(q.indexOf("kg")>=0) return (Number(p.soGoi)||0)*u;if(q.indexOf("gr")>=0||q.indexOf("g")>=0) return (Number(p.soGoi)||0)*u/1000;return (Number(p.soGoi)||0)*u;}
 function unitOf(p){var u=String(p.donVi||"").trim();if(u) return u;var qc=String(p.quyCach||"");return /[0-9]/.test(qc)?"gói":"đơn vị";}
-function parseSettings(){
-  try{
-    var qs=new URLSearchParams(location.search);
-    var b64=qs.get("s")||"";
-    if(!b64) return {};
-    var s=b64.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
-    return JSON.parse(decodeURIComponent(escape(atob(s))))||{};
-  }catch(e){ return {}; }
-}
-function parseT(){
-  var qs=new URLSearchParams(location.search);
-  var tt=qs.get("t");
-  if(tt){
-    var parts=tt.split("|");
-    var prods=[];
-    if(parts[10]){ prods=parts[10].split(",").filter(Boolean).map(function(x){var f=x.split("::"); return [f[0]||"",f[1]||"",f[2]||"",f[3]||"",f[4]||"",Number(f[5])||0,f[6]||"",0];}); }
-    return {soPhieu:parts[0]||"",soPhieuXuat:parts[1]||"",soPO:parts[2]||"",ngayGiao:parts[3]||"",kh:{ma:parts[4]||"",ten:parts[5]||"",dc:parts[6]||"",nn:parts[7]||"",sdt:parts[8]||"",xe:parts[9]||""},sp:prods,tong:Number(parts[11])||0};
-  }
-  var b64=qs.get("d")||"";
-  if(!b64) throw new Error("no data");
-  var s=b64.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
-  var o=JSON.parse(decodeURIComponent(escape(atob(s))));
-  if(Array.isArray(o)) return {soPhieu:o[1]||"",soPhieuXuat:o[2]||"",soPO:o[3]||"",ngayGiao:o[4]||"",kh:{ma:(o[5]||[])[0]||"",ten:(o[5]||[])[1]||"",dc:(o[5]||[])[2]||"",nn:(o[5]||[])[3]||"",sdt:(o[5]||[])[4]||"",xe:(o[5]||[])[5]||""},sp:o[7]||[],tong:o[8]||0};
-  return o;
-}
+function parseSettings(){try{var qs=new URLSearchParams(location.search);var b64=qs.get("s")||"";if(!b64) return {};var s=b64.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4) s+="=";return JSON.parse(decodeURIComponent(escape(atob(s))))||{};}catch(e){return {};}}
+function parseT(){var qs=new URLSearchParams(location.search);var tt=qs.get("t");if(tt){var parts=tt.split("|");var prods=[];if(parts[10]){prods=parts[10].split(",").filter(Boolean).map(function(x){var f=x.split("::");return [f[0]||"",f[1]||"",f[2]||"",f[3]||"",f[4]||"",Number(f[5])||0,f[6]||"",0];});}return {soPhieu:parts[0]||"",soPhieuXuat:parts[1]||"",soPO:parts[2]||"",ngayGiao:parts[3]||"",kh:{ma:parts[4]||"",ten:parts[5]||"",dc:parts[6]||"",nn:parts[7]||"",sdt:parts[8]||"",xe:parts[9]||""},sp:prods,tong:Number(parts[11])||0};}var b64=qs.get("d")||"";if(!b64) throw new Error("no data");var s=b64.replace(/-/g,"+").replace(/_/g,"/");while(s.length%4) s+="=";var o=JSON.parse(decodeURIComponent(escape(atob(s))));if(Array.isArray(o)) return {soPhieu:o[1]||"",soPhieuXuat:o[2]||"",soPO:o[3]||"",ngayGiao:o[4]||"",kh:{ma:(o[5]||[])[0]||"",ten:(o[5]||[])[1]||"",dc:(o[5]||[])[2]||"",nn:(o[5]||[])[3]||"",sdt:(o[5]||[])[4]||"",xe:(o[5]||[])[5]||""},sp:o[7]||[],tong:o[8]||0};return o;}
 try{
-  var S=parseSettings();
-  var main=S.m||"#3C2415"; var boxBg=S.b||"#FFFFFF"; var L=S.l||{}; var H=S.h||{};
-  var isHidden=function(k){ return H[k]===0; };
-  var lab=function(k,fb){ return L[k]||fb; };
-  // Apply colors via inline style override
-  var style=document.createElement("style"); style.textContent="h1{color:"+main+"!important;border-bottom-color:"+main+"!important}.box{ background:"+boxBg+"!important}.box h2{border-bottom-color:"+main+"!important}.cust .name{color:"+main+"!important}th{background:"+main+"!important}.total{border-top-color:"+main+"!important}"; document.head.appendChild(style);
-  var t=parseT();
-  var kh=t.kh||{}; var sp=t.sp||[];
-  var leftRows="";
-  if(!isHidden("SoPhieuIn")) leftRows+='<div class="row"><b>'+esc(lab("soPhieu","Số phiếu"))+'</b><span>'+esc(t.soPhieu||"-")+'</span></div>';
-  if(!isHidden("SoPhieuXuatIn")) leftRows+='<div class="row"><b>'+esc(lab("soPhieuXuat","Số phiếu xuất"))+'</b><span>'+esc(t.soPhieuXuat||"-")+'</span></div>';
-  if(!isHidden("SoPOIn")) leftRows+='<div class="row"><b>'+esc(lab("soPO","Số PO"))+'</b><span>'+esc(t.soPO||"-")+'</span></div>';
-  if(!isHidden("NgayGiaoIn")) leftRows+='<div class="row"><b>'+esc(lab("ngayGiao","Ngày giao"))+'</b><span>'+esc(fmtDMY(t.ngayGiao)||"-")+'</span></div>';
+  var S=parseSettings();var main=S.m||"#3C2415";var boxBg=S.b||"#FFFFFF";var L=S.l||{};var H=S.h||{};
+  var isHidden=function(k){return H[k]===0;};var lab=function(k,fb){return L[k]||fb;};
+  var style=document.createElement("style");style.textContent="h1{color:"+main+"!important;border-bottom-color:"+main+"!important}.box{background:"+boxBg+"!important}.box h2{border-bottom-color:"+main+"!important}.cust .name{color:"+main+"!important}th{background:"+main+"!important}.total{border-top-color:"+main+"!important}";document.head.appendChild(style);
+  var t=parseT();var kh=t.kh||{};var sp=t.sp||[];
+  var leftRows="";if(!isHidden("SoPhieuIn")) leftRows+='<div class="row"><b>'+esc(lab("soPhieu","Số phiếu"))+'</b><span>'+esc(t.soPhieu||"-")+'</span></div>';if(!isHidden("SoPhieuXuatIn")) leftRows+='<div class="row"><b>'+esc(lab("soPhieuXuat","Số phiếu xuất"))+'</b><span>'+esc(t.soPhieuXuat||"-")+'</span></div>';if(!isHidden("SoPOIn")) leftRows+='<div class="row"><b>'+esc(lab("soPO","Số PO"))+'</b><span>'+esc(t.soPO||"-")+'</span></div>';if(!isHidden("NgayGiaoIn")) leftRows+='<div class="row"><b>'+esc(lab("ngayGiao","Ngày giao"))+'</b><span>'+esc(fmtDMY(t.ngayGiao)||"-")+'</span></div>';
   var left='<div class="box left"><h2>'+esc(lab("thongTinPhieu","THÔNG TIN PHIẾU"))+'</h2>'+leftRows+'</div>';
-  var custHtml="";
-  if(!isHidden("MaKhachIn")&&kh.ma) custHtml+='<div>'+esc(kh.ma)+'</div>';
-  if(!isHidden("TenDaiLyIn")&&kh.ten) custHtml+='<div class="name">• '+esc(kh.ten)+'</div>';
-  if(!isHidden("DiaChiKhachIn")&&kh.dc) custHtml+='<div>'+esc(kh.dc)+'</div>';
-  if(!isHidden("NguoiNhanIn")&&kh.nn) custHtml+='<div><span class="recv">• '+esc(kh.nn)+'</span></div>';
-  if(!isHidden("SDTNhanIn")&&kh.sdt) custHtml+='<div>'+esc(kh.sdt)+'</div>';
-  if(!isHidden("LoaiXeIn")&&kh.xe) custHtml+='<div>'+esc(kh.xe)+'</div>';
+  var custHtml="";if(!isHidden("MaKhachIn")&&kh.ma) custHtml+='<div>'+esc(kh.ma)+'</div>';if(!isHidden("TenDaiLyIn")&&kh.ten) custHtml+='<div class="name">• '+esc(kh.ten)+'</div>';if(!isHidden("DiaChiKhachIn")&&kh.dc) custHtml+='<div>'+esc(kh.dc)+'</div>';if(!isHidden("NguoiNhanIn")&&kh.nn) custHtml+='<div><span class="recv">• '+esc(kh.nn)+'</span></div>';if(!isHidden("SDTNhanIn")&&kh.sdt) custHtml+='<div>'+esc(kh.sdt)+'</div>';if(!isHidden("LoaiXeIn")&&kh.xe) custHtml+='<div>'+esc(kh.xe)+'</div>';
   var right='<div class="box right"><h2>'+esc(lab("thongTinKhach","THÔNG TIN KHÁCH HÀNG"))+'</h2><div class="cust">'+custHtml+'</div></div>';
-  var rows="", tongKg=0, totals={};
-  sp.forEach(function(r,i){var p={maKho:r[0]||"",maFast:r[1]||"",tenSP:r[2]||"",quyCach:r[3]||"",ngaySX:r[4]||"",soGoi:r[5]||0,donVi:r[6]||"",soKg:r[7]||0}; var u=unitOf(p); totals[u]=(totals[u]||0)+(Number(p.soGoi)||0); var kg=calcKg(p); tongKg+=kg;
-    rows+='<tr>'+(!isHidden("CotSTTIn")?'<td>'+(i+1)+'</td>':"")+(!isHidden("MaFastIn")?'<td>'+esc(p.maFast)+'</td>':"")+(!isHidden("MaKhoIn")?'<td>'+esc(p.maKho)+'</td>':"")+(!isHidden("TenSPIn")?'<td>'+esc(p.tenSP)+'</td>':"")+(!isHidden("QuyCachIn")?'<td>'+esc(p.quyCach||"-")+'</td>':"")+(!isHidden("NgaySXIn")?'<td>'+esc(fmtDMY(p.ngaySX)||"-")+'</td>':"")+(!isHidden("SoGoiIn")?'<td class="num">'+fmt(p.soGoi)+' '+esc(u)+'</td>':"")+(!isHidden("SoKgIn")?'<td class="num">'+fmt(kg)+' kg</td>':"")+'</tr>';});
-  if(!rows) rows='<tr><td colspan="7">Không có sản phẩm</td></tr>';
-  if(t.tong) tongKg=Number(t.tong)||tongKg;
+  var rows="",tongKg=0,totals={};sp.forEach(function(r,i){var p={maKho:r[0]||"",maFast:r[1]||"",tenSP:r[2]||"",quyCach:r[3]||"",ngaySX:r[4]||"",soGoi:r[5]||0,donVi:r[6]||"",soKg:r[7]||0};var u=unitOf(p);totals[u]=(totals[u]||0)+(Number(p.soGoi)||0);var kg=calcKg(p);tongKg+=kg;rows+='<tr>'+(!isHidden("CotSTTIn")?'<td>'+(i+1)+'</td>':"")+(!isHidden("MaFastIn")?'<td>'+esc(p.maFast)+'</td>':"")+(!isHidden("MaKhoIn")?'<td>'+esc(p.maKho)+'</td>':"")+(!isHidden("TenSPIn")?'<td>'+esc(p.tenSP)+'</td>':"")+(!isHidden("QuyCachIn")?'<td>'+esc(p.quyCach||"-")+'</td>':"")+(!isHidden("NgaySXIn")?'<td>'+esc(fmtDMY(p.ngaySX)||"-")+'</td>':"")+(!isHidden("SoGoiIn")?'<td class="num">'+fmt(p.soGoi)+' '+esc(u)+'</td>':"")+(!isHidden("SoKgIn")?'<td class="num">'+fmt(kg)+' kg</td>':"")+'</tr>';});
+  if(!rows) rows='<tr><td colspan="7">Không có sản phẩm</td></tr>';if(t.tong) tongKg=Number(t.tong)||tongKg;
   var totalQtyText=Object.keys(totals).map(function(k){return fmt(totals[k])+" "+k;}).join(" + ");
-  var totalHtml="";
-  if(!isHidden("TongIn")) totalHtml='<div class="total"><div>'+esc(lab("tong","Tổng"))+' số lượng: '+totalQtyText+'</div><div>'+esc(lab("tong","Tổng"))+' khối lượng: '+fmt(tongKg)+' kg</div></div>';
+  var totalHtml="";if(!isHidden("TongIn")) totalHtml='<div class="total"><div>'+esc(lab("tongSoLuong","Tổng số lượng"))+': '+totalQtyText+'</div><div>'+esc(lab("tongKhoiLuong","Tổng khối lượng"))+': '+fmt(tongKg)+' kg</div></div>';
   var headRow='<tr>'+(!isHidden("CotSTTIn")?'<th>STT</th>':"")+(!isHidden("MaFastIn")?'<th>'+esc(lab("maFast","Mã Fast"))+'</th>':"")+(!isHidden("MaKhoIn")?'<th>'+esc(lab("maKho","Mã kho"))+'</th>':"")+(!isHidden("TenSPIn")?'<th>'+esc(lab("tenSP","Sản phẩm"))+'</th>':"")+(!isHidden("QuyCachIn")?'<th>'+esc(lab("quyCach","Quy cách"))+'</th>':"")+(!isHidden("NgaySXIn")?'<th>'+esc(lab("ngaySX","NSX"))+'</th>':"")+(!isHidden("SoGoiIn")?'<th>'+esc(lab("soGoi","Số lượng"))+'</th>':"")+(!isHidden("SoKgIn")?'<th>'+esc(lab("soKg","Số kg"))+'</th>':"")+'</tr>';
   document.getElementById("root").innerHTML='<div class="wrap"><h1>'+esc(lab("mainTitle","PHIẾU GIAO HÀNG"))+'</h1><div class="cols">'+left+right+'</div><table><thead>'+headRow+'</thead><tbody>'+rows+'</tbody></table>'+totalHtml+'</div>';
 }catch(e){document.getElementById("root").innerHTML='<div style="text-align:center;padding:40px;color:#666">Vui lòng quét mã QR để xem phiếu</div>';}
