@@ -4,7 +4,7 @@
 <script>
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function fmt(n){n=Number(n)||0;return (Math.round(n*100)/100).toString();}
-function calcKg(p){var m=String(p.quyCach||"").match(/([0-9]+(?:\.[0-9]+)?)/);var u=m?Number(m[1]):0;return u>0?(Number(p.soGoi)||0)*u:(Number(p.soKg)||0);}
+function calcKg(p){var q=String(p.quyCach||"").toLowerCase();var m=q.match(/([0-9]+(?:\.[0-9]+)?)/);var u=m?Number(m[1]):0;if(!u) return Number(p.soKg)||0;if(q.indexOf("kg")>=0) return (Number(p.soGoi)||0)*u;if(q.indexOf("gr")>=0||q.indexOf("g")>=0) return (Number(p.soGoi)||0)*u/1000;return (Number(p.soGoi)||0)*u;}
 function parseT(){
   var qs=new URLSearchParams(location.search);
   var tt=qs.get("t");
