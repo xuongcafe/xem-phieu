@@ -4,6 +4,7 @@
 <script>
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function fmt(n){n=Number(n)||0;return (Math.round(n*100)/100).toString();}
+function fmtDMY(v){var s=String(v||"").trim();var m=s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);if(m) return String(m[3]).padStart(2,"0")+"/"+String(m[2]).padStart(2,"0")+"/"+m[1];return s;}
 function calcKg(p){var q=String(p.quyCach||"").toLowerCase();var m=q.match(/([0-9]+(?:\.[0-9]+)?)/);var u=m?Number(m[1]):0;if(!u) return Number(p.soKg)||0;if(q.indexOf("kg")>=0) return (Number(p.soGoi)||0)*u;if(q.indexOf("gr")>=0||q.indexOf("g")>=0) return (Number(p.soGoi)||0)*u/1000;return (Number(p.soGoi)||0)*u;}
 function unitOf(p){var u=String(p.donVi||"").trim();if(u) return u;var qc=String(p.quyCach||"");return /[0-9]/.test(qc)?"gói":"đơn vị";}
 function parseT(){
@@ -25,13 +26,14 @@ function parseT(){
 try{
   var t=parseT();
   var kh=t.kh||{}; var sp=t.sp||[];
-  var left='<div class="box left"><h2>THÔNG TIN PHIẾU</h2><div class="row"><b>Số phiếu</b><span>'+esc(t.soPhieu||"-")+'</span></div><div class="row"><b>Số phiếu xuất</b><span>'+esc(t.soPhieuXuat||"-")+'</span></div><div class="row"><b>Số PO</b><span>'+esc(t.soPO||"-")+'</span></div><div class="row"><b>Ngày giao</b><span>'+esc(t.ngayGiao||"-")+'</span></div></div>';
+  var left='<div class="box left"><h2>THÔNG TIN PHIẾU</h2><div class="row"><b>Số phiếu</b><span>'+esc(t.soPhieu||"-")+'</span></div><div class="row"><b>Số phiếu xuất</b><span>'+esc(t.soPhieuXuat||"-")+'</span></div><div class="row"><b>Số PO</b><span>'+esc(t.soPO||"-")+'</span></div><div class="row"><b>Ngày giao</b><span>'+esc(fmtDMY(t.ngayGiao)||"-")+'</span></div></div>';
   var right='<div class="box right"><h2>THÔNG TIN KHÁCH HÀNG</h2><div class="cust">'+(kh.ten?'<div class="name">• '+esc(kh.ten)+'</div>':"")+(kh.dc?'<div>'+esc(kh.dc)+'</div>':"")+(kh.nn?'<div><span class="recv">• '+esc(kh.nn)+'</span>'+(kh.sdt?' • '+esc(kh.sdt):"")+'</div>':(kh.sdt?'<div>'+esc(kh.sdt)+'</div>':""))+(kh.xe?'<div>'+esc(kh.xe)+'</div>':"")+'</div></div>';
-  var rows="", tongKg=0, tongSL=0, totalUnit="";
-  sp.forEach(function(r,i){var p={maKho:r[0]||"",maFast:r[1]||"",tenSP:r[2]||"",quyCach:r[3]||"",ngaySX:r[4]||"",soGoi:r[5]||0,donVi:r[6]||"",soKg:r[7]||0}; var u=unitOf(p); if(!totalUnit) totalUnit=u; else if(totalUnit!==u) totalUnit=""; var kg=calcKg(p); tongKg+=kg; tongSL+=Number(p.soGoi)||0;
-    rows+='<tr><td>'+(i+1)+'</td><td>'+esc(p.maFast)+'</td><td>'+(p.maKho?'<strong>'+esc(p.maKho)+'</strong><br>':"")+esc(p.tenSP)+'</td><td>'+esc(p.quyCach||"-")+'</td><td>'+esc(p.ngaySX||"-")+'</td><td class="num">'+fmt(p.soGoi)+' '+esc(u)+'</td><td class="num">'+fmt(kg)+' kg</td></tr>';});
+  var rows="", tongKg=0, totals={};
+  sp.forEach(function(r,i){var p={maKho:r[0]||"",maFast:r[1]||"",tenSP:r[2]||"",quyCach:r[3]||"",ngaySX:r[4]||"",soGoi:r[5]||0,donVi:r[6]||"",soKg:r[7]||0}; var u=unitOf(p); totals[u]=(totals[u]||0)+(Number(p.soGoi)||0); var kg=calcKg(p); tongKg+=kg;
+    rows+='<tr><td>'+(i+1)+'</td><td>'+esc(p.maFast)+'</td><td>'+(p.maKho?'<strong>'+esc(p.maKho)+'</strong><br>':"")+esc(p.tenSP)+'</td><td>'+esc(p.quyCach||"-")+'</td><td>'+esc(fmtDMY(p.ngaySX)||"-")+'</td><td class="num">'+fmt(p.soGoi)+' '+esc(u)+'</td><td class="num">'+fmt(kg)+' kg</td></tr>';});
   if(!rows) rows='<tr><td colspan="7">Không có sản phẩm</td></tr>';
   if(t.tong) tongKg=Number(t.tong)||tongKg;
-  document.getElementById("root").innerHTML='<div class="wrap"><h1>PHIẾU GIAO HÀNG</h1><div class="cols">'+left+right+'</div><table><thead><tr><th>STT</th><th>Mã Fast</th><th>Sản phẩm</th><th>Quy cách</th><th>NSX</th><th>Số lượng</th><th>Kg</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total"><div>Tổng số lượng: '+fmt(tongSL)+(totalUnit?" "+totalUnit:"")+'</div><div>Tổng khối lượng: '+fmt(tongKg)+' kg</div></div></div>';
+  var totalQtyText=Object.keys(totals).map(function(k){return fmt(totals[k])+" "+k;}).join(" + ");
+  document.getElementById("root").innerHTML='<div class="wrap"><h1>PHIẾU GIAO HÀNG</h1><div class="cols">'+left+right+'</div><table><thead><tr><th>STT</th><th>Mã Fast</th><th>Sản phẩm</th><th>Quy cách</th><th>NSX</th><th>Số lượng</th><th>Kg</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total"><div>Tổng số lượng: '+totalQtyText+'</div><div>Tổng khối lượng: '+fmt(tongKg)+' kg</div></div></div>';
 }catch(e){document.getElementById("root").innerHTML='<div style="text-align:center;padding:40px;color:#666">Vui lòng quét mã QR để xem phiếu</div>';}
 </script></body></html>
