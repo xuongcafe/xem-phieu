@@ -5,15 +5,24 @@
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function fmt(n){n=Number(n)||0;return (Math.round(n*100)/100).toString();}
 function calcKg(p){var m=String(p.quyCach||"").match(/([0-9]+(?:\.[0-9]+)?)/);var u=m?Number(m[1]):0;return u>0?(Number(p.soGoi)||0)*u:(Number(p.soKg)||0);}
-try{
-  var b64=new URLSearchParams(location.search).get("d")||"";
+function parseT(){
+  var qs=new URLSearchParams(location.search);
+  var tt=qs.get("t");
+  if(tt){
+    var parts=tt.split("|");
+    var prods=[];
+    if(parts[10]){ prods=parts[10].split(",").filter(Boolean).map(function(x){var f=x.split("::"); return [f[0]||"",f[1]||"",f[2]||"",f[3]||"",f[4]||"",Number(f[5])||0,f[6]||"",0];}); }
+    return {soPhieu:parts[0]||"",soPhieuXuat:parts[1]||"",soPO:parts[2]||"",ngayGiao:parts[3]||"",kh:{ma:parts[4]||"",ten:parts[5]||"",dc:parts[6]||"",nn:parts[7]||"",sdt:parts[8]||"",xe:parts[9]||""},sp:prods,tong:Number(parts[11])||0};
+  }
+  var b64=qs.get("d")||"";
   if(!b64) throw new Error("no data");
   var s=b64.replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="=";
-  var json=decodeURIComponent(escape(atob(s)));
-  var o=JSON.parse(json);
-  var t;
-  if(Array.isArray(o)){ t={soPhieu:o[1]||"",soPhieuXuat:o[2]||"",soPO:o[3]||"",ngayGiao:o[4]||"",kh:{ma:(o[5]||[])[0]||"",ten:(o[5]||[])[1]||"",dc:(o[5]||[])[2]||"",nn:(o[5]||[])[3]||"",sdt:(o[5]||[])[4]||"",xe:(o[5]||[])[5]||""},sp:o[7]||[],tong:o[8]||0}; }
-  else { t=o; }
+  var o=JSON.parse(decodeURIComponent(escape(atob(s))));
+  if(Array.isArray(o)) return {soPhieu:o[1]||"",soPhieuXuat:o[2]||"",soPO:o[3]||"",ngayGiao:o[4]||"",kh:{ma:(o[5]||[])[0]||"",ten:(o[5]||[])[1]||"",dc:(o[5]||[])[2]||"",nn:(o[5]||[])[3]||"",sdt:(o[5]||[])[4]||"",xe:(o[5]||[])[5]||""},sp:o[7]||[],tong:o[8]||0};
+  return o;
+}
+try{
+  var t=parseT();
   var kh=t.kh||{}; var sp=t.sp||[];
   var left='<div class="box left"><h2>THONG TIN PHIEU</h2><div class="row"><b>So phieu</b><span>'+esc(t.soPhieu||"-")+'</span></div><div class="row"><b>So phieu xuat</b><span>'+esc(t.soPhieuXuat||"-")+'</span></div><div class="row"><b>So PO</b><span>'+esc(t.soPO||"-")+'</span></div><div class="row"><b>Ngay giao</b><span>'+esc(t.ngayGiao||"-")+'</span></div></div>';
   var right='<div class="box right"><h2>THONG TIN KHACH HANG</h2><div class="cust">'+(kh.ten?'<div class="name">• '+esc(kh.ten)+'</div>':"")+(kh.dc?'<div>'+esc(kh.dc)+'</div>':"")+(kh.nn?'<div><span class="recv">• '+esc(kh.nn)+'</span>'+(kh.sdt?' • '+esc(kh.sdt):"")+'</div>':(kh.sdt?'<div>'+esc(kh.sdt)+'</div>':""))+(kh.xe?'<div>'+esc(kh.xe)+'</div>':"")+'</div></div>';
