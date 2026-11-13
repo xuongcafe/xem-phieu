@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="vi">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff"><title>RUNAM - Xem phiếu giao hàng</title>
 <style>
 :root{--brown:#3c2415;--beige:#cbb397;--panel:#ececee;--line:#d4d4d8;--ink:#171717}
@@ -39,7 +39,7 @@ table{width:100%;border-collapse:collapse;table-layout:auto;font-size:15px}th{ba
      const o=JSON.parse(decode64(params.get('d')||''));
      if(Array.isArray(o)&&o[0]===1){
        const kh=o[5]||[];
-       ticket={soPhieu:o[1]||'',soPhieuXuat:o[2]||'',soPO:o[3]||'',ngayGiao:o[4]||'',customer:{maKhach:kh[0]||'',tenDaiLy:kh[1]||'',diaChi:kh[2]||'',nguoiNhan:kh[3]||'',sdt:kh[4]||'',loaiXe:kh[5]||''},products:(o[7]||[]).map(r=>({maKho:r[0]||'',maFast:r[1]||'',tenSP:r[2]||'',quyCach:r[3]||'',ngaySX:r[4]||'',soGoi:r[5]||0,donVi:r[6]||'',soKg:r[7]||0})),totalKg:o[8]||0,nguoiGiao:o[9]||'',nguoiNhanHang:o[10]||kh[3]||''};
+       ticket={soPhieu:o[1]||'',soPhieuXuat:o[2]||'',soPO:o[3]||'',ngayGiao:o[4]||'',customer:{maKhach:kh[0]||'',tenDaiLy:kh[1]||'',diaChi:kh[2]||'',nguoiNhan:kh[3]||'',sdt:kh[4]||'',loaiXe:kh[5]||''},products:(o[7]||[]).map(r=>Array.isArray(r)?({maFast:r[1]||'',tenSP:r[2]||'',quyCach:r[3]||'',ngaySX:r[4]||'',soGoi:r[5]||0,donVi:r[6]||'',soKg:r[7]||0}):({maFast:r?.maFast||r?.fastCode||'',tenSP:r?.tenSP||'',quyCach:r?.quyCach||'',ngaySX:r?.ngaySX||'',soGoi:r?.soGoi||0,donVi:r?.donVi||'',soKg:r?.soKg||0})),totalKg:o[8]||0,nguoiGiao:o[9]||'',nguoiNhanHang:o[10]||kh[3]||''};
        rows=ticket.products;
      }
    }catch(e){}
@@ -52,7 +52,7 @@ table{width:100%;border-collapse:collapse;table-layout:auto;font-size:15px}th{ba
    const raw=params.get('t')||'';
    rows=raw.split(',').filter(Boolean).map(x=>{const a=x.split('::');return {maFast:a[1]||'',tenSP:a[2]||'',quyCach:a[3]||'',ngaySX:a[4]||'',soGoi:num(a[5]),donVi:a[6]||'gói'};});
  }else if(!rows.length&&params.has('data')){
-   try{ticket=JSON.parse(decode64(params.get('data')));rows=Array.isArray(ticket.products)?ticket.products:[];}catch(e){}
+   try{ticket=JSON.parse(decode64(params.get('data')));rows=Array.isArray(ticket.products)?ticket.products.map(r=>({maFast:r?.maFast||r?.fastCode||'',tenSP:r?.tenSP||'',quyCach:r?.quyCach||'',ngaySX:r?.ngaySX||'',soGoi:r?.soGoi||r?.qty||0,donVi:r?.donVi||'gói',soKg:r?.soKg||0})):[];}catch(e){}
  }
  // Optional metadata supported for a future full-data QR payload.
  const customer=ticket.customer||{};
@@ -69,6 +69,6 @@ table{width:100%;border-collapse:collapse;table-layout:auto;font-size:15px}th{ba
  const soPhieu=get('soPhieu','-'),soPhieuXuat=get('soPhieuXuat','-'),soPO=get('soPO','-'),ngay=get('ngayGiao','-');
  const name=customer.tenDaiLy||get('tenDaiLy','');const address=customer.diaChi||get('diaChi','');const recipient=customer.nguoiNhan||get('nguoiNhan','');const phone=customer.sdt||get('sdt','');
  const nguoiGiao=person('nguoiGiao');const nguoiNhan=person('nguoiNhanHang')||recipient;
- $('#app').innerHTML=`<main class="page"><h1>PHIẾU GIAO HÀNG</h1><div class="rule"></div><section class="top"><div class="panel"><h2>THÔNG TIN PHIẾU</h2><div class="info-row"><span>Số phiếu</span><span>${esc(soPhieu)}</span></div><div class="info-row"><span>Số phiếu xuất</span><span>${esc(soPhieuXuat||'-')}</span></div><div class="info-row"><span>Số PO</span><span>${esc(soPO||'-')}</span></div><div class="info-row"><span>Ngày giao</span><span>${esc(fmtDate(ngay))}</span></div></div><div class="panel"><h2>THÔNG TIN KHÁCH HÀNG</h2><div class="customer-flex"><div class="customer-text customer-body">${name?`• ${esc(name)}<br>`:''}${address?`${esc(address)}<br>`:''}${recipient?`• ${esc(recipient)}<br>`:''}${phone?`${esc(phone)}`:''}</div></div></div></section><table><thead><tr><th style="width:5%">STT</th><th style="width:13%">Mã Fast</th><th>Sản phẩm</th><th style="width:11%">Quy cách</th><th style="width:13%">NSX</th><th style="width:12%">Số lượng</th><th style="width:10%">Kg</th></tr></thead><tbody>${body}</tbody></table><section class="bottom"><div class="totals">Tổng số lượng: ${fmt(totalQty)}<br>Tổng khối lượng: ${fmt(totalKg)} kg</div></section><section class="people"><div class="person">Người giao hàng: ${esc(nguoiGiao||'-')}</div><div class="person">Người nhận hàng: ${esc(nguoiNhan||'-')}</div></section></main>`;
+ $('#app').innerHTML=`<main class="page"><h1>PHIẾU GIAO HÀNG</h1><div class="rule"></div><section class="top"><div class="panel"><h2>THÔNG TIN PHIẾU</h2><div class="info-row"><span>Số phiếu</span><span>${esc(soPhieu)}</span></div><div class="info-row"><span>Số phiếu xuất</span><span>${esc(soPhieuXuat||'-')}</span></div><div class="info-row"><span>Số PO</span><span>${esc(soPO||'-')}</span></div><div class="info-row"><span>Ngày giao</span><span>${esc(fmtDate(ngay))}</span></div></div><div class="panel"><h2>THÔNG TIN KHÁCH HÀNG</h2><div class="customer-flex"><div class="customer-text customer-body">${name?`• ${esc(name)}<br>`:''}${address?`${esc(address)}<br>`:''}${recipient?`• ${esc(recipient)}<br>`:''}${phone?`${esc(phone)}`:''}</div></div></div></section><table><thead><tr><th style="width:5%">STT</th><th style="width:13%">Mã Fast</th><th>Sản phẩm</th><th style="width:11%">Quy cách</th><th style="width:13%">NSX</th><th style="width:12%">Số lượng</th><th style="width:10%">Kg</th></tr></thead><tbody>${body}</tbody></table><section class="bottom"><div class="totals">Tổng số lượng: ${fmt(totalQty)}<br>Tổng khối lượng: ${fmt(totalKg)} kg</div></section></main>`;
 })();
 </script></body></html>
