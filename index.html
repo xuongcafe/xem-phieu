@@ -20,52 +20,13 @@ table{width:100%;border-collapse:collapse;table-layout:auto;font-size:13px}th{ba
 </style></head>
 <body><div id="app"><div class="status">Đang đọc dữ liệu phiếu...</div></div>
 <script>
-(()=>{
- const $=s=>document.querySelector(s);
- const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const num=v=>{const n=Number(String(v??0).replace(',','.'));return Number.isFinite(n)?n:0};
- const fmt=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:3});
- const fmtDate=v=>{if(!v)return '-';const s=String(v);let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return `${m[3]}/${m[2]}/${m[1]}`;m=s.match(/^(\d{2})(\d{2})(\d{4})$/);if(m)return `${m[1]}/${m[2]}/${m[3]}`;return s};
- const params=new URLSearchParams(location.search);let ticket={},rows=[];
- const lzwDecompress=value=>{const s=String(value||"");if(!s.startsWith("Z1"))return null;let b=s.slice(2).replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const raw=atob(b),codes=[];for(let i=0;i+1<raw.length;i+=2)codes.push((raw.charCodeAt(i)<<8)|raw.charCodeAt(i+1));if(!codes.length)return "";const dict=[];for(let i=0;i<256;i++)dict[i]=String.fromCharCode(i);let next=256,old=dict[codes[0]],out=old;for(let i=1;i<codes.length;i++){const code=codes[i];let entry=dict[code];if(entry===undefined&&code===next)entry=old+old.charAt(0);if(entry===undefined)throw new Error("Invalid compressed QR");out+=entry;if(next<65535)dict[next++]=old+entry.charAt(0);old=entry;}return decodeURIComponent(escape(out));};
- const decode64=s=>{s=String(s||'').replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)))};
- if(params.has('d')){try{const decoded= lzwDecompress(params.get('d'));const o=JSON.parse(decoded!==null?decoded:decode64(params.get('d')));if(Array.isArray(o)&&o[0]===1){const kh=o[5]||[],co=o[6]||[];ticket={soPhieu:o[1]||'',soPhieuXuat:o[2]||'',soPO:o[3]||'',ngayGiao:o[4]||'',customer:{maKhach:kh[0]||'',tenDaiLy:kh[1]||'',diaChi:kh[2]||'',nguoiNhan:kh[3]||'',sdt:kh[4]||'',loaiXe:kh[5]||''},company:{tenXuong:co[0]||'',sdtXuong:co[1]||'',emailXuong:co[2]||'',diaChiXuong:co[3]||''},products:(o[7]||[]).map(r=>Array.isArray(r)?{maKho:r[0]||'',maFast:r[1]||'',tenSP:r[2]||'',quyCach:r[3]||'',ngaySX:r[4]||'',soGoi:r[5]||0,donVi:r[6]||'',soKg:r[7]||0}:r),totalKg:o[8]||0,nguoiGiao:o[9]||'',nguoiNhanHang:o[10]||'',displaySettings:o[11]||{}};rows=ticket.products;}}catch(e){}}
- // QR cu: giu kha nang doc cac dang du lieu cu
- if(!rows.length&&params.has('c')){rows=(params.get('c')||'').split(',').filter(Boolean).map(x=>{const a=x.split(':');return{maFast:a[0]||'',soGoi:num(a[1]),ngaySX:a[2]||'',tenSP:'',quyCach:'',donVi:'gói'};});}
- else if(!rows.length&&params.has('t')){rows=(params.get('t')||'').split(',').filter(Boolean).map(x=>{const a=x.split('::');return{maFast:a[1]||'',tenSP:a[2]||'',quyCach:a[3]||'',ngaySX:a[4]||'',soGoi:num(a[5]),donVi:a[6]||'gói'};});}
- else if(!rows.length&&params.has('data')){try{ticket=JSON.parse(decode64(params.get('data')));rows=Array.isArray(ticket.products)?ticket.products:[];}catch(e){}}
- if(!rows.length){$('#app').innerHTML='<div class="status"><b>Không đọc được dữ liệu sản phẩm.</b><br>Vui lòng quét lại mã QR trên phiếu RUNAM.</div>';return;}
- const ds=ticket.displaySettings||{},h=ds.h||{},l=ds.l||{},z=ds.z||{},th=ds.t||{};
- // Trong RUNAM, true = hien thi, false = an. QR cu chua co cau hinh se dung mac dinh hien thi.
- const show=k=>h[k]!==false;
- const label=(k,d)=>l[k]||d;
- const size=(k,d)=>{const n=Number(z[k]);return Number.isFinite(n)&&n>=8&&n<=32?n:d};
- const root=document.documentElement;
- if(/^#[0-9a-f]{6}$/i.test(th.main||''))root.style.setProperty('--brown',th.main);
- if(/^#[0-9a-f]{6}$/i.test(th.beige||''))root.style.setProperty('--beige',th.beige);
- if(/^#[0-9a-f]{6}$/i.test(th.boxBg||''))root.style.setProperty('--panel',th.boxBg);
- if(/^#[0-9a-f]{6}$/i.test(th.text||''))root.style.setProperty('--ink',th.text);
- if(['Inter','Arial','Roboto','Be Vietnam Pro','Playfair Display'].includes(th.font||''))document.body.style.fontFamily=`"${th.font}",Arial,sans-serif`;
- const c=ticket.customer||{},co=ticket.company||{};
- const companyMeta=[show('SDTIn')&&co.sdtXuong,show('EmailIn')&&co.emailXuong,show('DiaChiIn')&&co.diaChiXuong].filter(Boolean).join(' · ');
- const companyBlock=(show('TenXuongIn')&&co.tenXuong)||(companyMeta)?`<div class="brand"><div class="brand-info">${show('TenXuongIn')&&co.tenXuong?`<div class="company">${esc(co.tenXuong)}</div>`:''}${companyMeta?`<div class="company-meta">${esc(companyMeta)}</div>`:''}</div></div>`:'';
- const info=[['SoPhieuIn','soPhieu',label('soPhieu','Số phiếu'),ticket.soPhieu],['SoPhieuXuatIn','soPhieuXuat',label('soPhieuXuat','Số phiếu xuất'),ticket.soPhieuXuat],['SoPOIn','soPO',label('soPO','Số PO'),ticket.soPO],['NgayGiaoIn','ngayGiao',label('ngayGiao','Ngày giao'),fmtDate(ticket.ngayGiao)]];
- const infoRows=info.filter(x=>show(x[0])).map(x=>`<div class="info-row"><span>${esc(x[2])}</span><span>${esc(x[3]||'-')}</span></div>`).join('');
- const customerFields=[['MaKhachIn','maKhach',label('maKhach','Mã khách'),c.maKhach],['TenDaiLyIn','tenDaiLy',label('tenDaiLy','Tên đại lý'),c.tenDaiLy],['DiaChiKhachIn','diaChi',label('diaChi','Địa chỉ'),c.diaChi],['NguoiNhanIn','nguoiNhan',label('nguoiNhan','Người nhận'),c.nguoiNhan],['SDTNhanIn','sdtNhan',label('sdtNhan','SĐT người nhận'),c.sdt],['LoaiXeIn','loaiXe',label('loaiXe','Loại xe'),c.loaiXe]];
- const customerRows=customerFields.filter(x=>show(x[0])&&x[3]).map(x=>`<div class="customer-line">${esc(x[2])}: ${esc(x[3])}</div>`).join('');
- const columns=[['CotSTTIn','stt',label('stt','STT'),r=>String(r.i+1),'center'],['MaKhoIn','maKho',label('maKho','Mã kho'),r=>r.p.maKho||'',''],['MaFastIn','maFast',label('maFast','Mã Fast'),r=>r.p.maFast||'',''],['TenSPIn','tenSP',label('tenSP','Sản phẩm'),r=>r.p.tenSP||'',''],['QuyCachIn','quyCach',label('quyCach','Quy cách'),r=>r.p.quyCach||'-',''],['NgaySXIn','ngaySX',label('ngaySX','NSX'),r=>fmtDate(r.p.ngaySX),''],['SoGoiIn','soGoi',label('soGoi','Số lượng'),r=>`${fmt(num(r.p.soGoi))} ${r.p.donVi||(/\d/.test(String(r.p.quyCach||''))?'gói':(String(r.p.quyCach||'').trim().split(/\s+/).pop()||'đơn vị'))}`,'right'],['SoKgIn','soKg',label('soKg','Số kg'),r=>`${fmt(num(r.p.soKg))} kg`,'right']].filter(x=>show(x[0]));
- let totalQty=0,computedTotalKg=0;
- const productRows=rows.map((p,i)=>{const qty=num(p.soGoi);let kg=num(p.soKg);if(!kg){const m=String(p.quyCach||'').match(/([0-9]+(?:[.,][0-9]+)?)\s*(kg|g|gr)\b/i);if(m)kg=qty*num(m[1])/(m[2].toLowerCase()==='kg'?1:1000);}totalQty+=qty;computedTotalKg+=kg;return{p,i,kg};});
-  const totalKg=Number.isFinite(Number(ticket.totalKg))&&ticket.totalKg!==''?num(ticket.totalKg):computedTotalKg;
- const header=columns.map(x=>`<th class="${x[4]}">${esc(x[2])}</th>`).join('');
- const body=productRows.map(r=>`<tr>${columns.map(x=>`<td class="${x[4]}">${esc(x[3]({p:r.p,i:r.i,kg:r.kg}))}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${Math.max(columns.length,1)}">Không có sản phẩm</td></tr>`;
- const totals=show('TongIn')?`<section class="bottom"><div class="totals">${esc(label('tongSoLuong','Tổng số lượng'))}: ${fmt(totalQty)}<br>${esc(label('tongKhoiLuong','Tổng khối lượng'))}: ${fmt(totalKg)} kg</div></section>`:'';
- const people=show('ChuKyIn')?`<section class="people">${show('NguoiGiaoKyIn')?`<div class="person">${esc(label('nguoiGiao','Người giao'))}</div>`:''}${show('NguoiNhanKyIn')?`<div class="person">${esc(label('nguoiNhanFooter','Người nhận'))}</div>`:''}</section>`:'';
- const title=label('mainTitle','PHIẾU GIAO HÀNG');
- const infoPanel=infoRows?`<div class="panel"><h2>${esc(label('thongTinPhieu','THÔNG TIN PHIẾU'))}</h2>${infoRows}</div>`:'';
- const customerPanel=customerRows?`<div class="panel"><h2>${esc(label('thongTinKhach','THÔNG TIN KHÁCH HÀNG'))}</h2><div class="customer-body">${customerRows}</div></div>`:'';
- const top=infoPanel||customerPanel?`<section class="top">${infoPanel}${customerPanel}</section>`:'';
- const productSection=columns.length?`<h2 style="font-size:${size('chiTietSP',15)}px;text-align:center;color:var(--brown)">${esc(label('chiTietSP','CHI TIẾT SẢN PHẨM'))}</h2><table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>${totals}`:'';
-  $('#app').innerHTML=`<main class="page"><h1 style="font-size:${size('mainTitle',28)}px">${esc(title)}</h1><div class="rule"></div>${top}${productSection}${people}</main>`;
-})();
+(()=>{const $=s=>document.querySelector(s),e=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),n=v=>{let x=Number(String(v??0).replace(',','.'));return Number.isFinite(x)?x:0},f=v=>Number(v||0).toLocaleString('vi-VN',{maximumFractionDigits:3}),d=v=>{let m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[3]+'/'+m[2]+'/'+m[1]:(v||'-')};
+const lzw=v=>{let s=String(v||'');if(!s.startsWith('Z1'))return null;let b=s.slice(2).replace(/-/g,'+').replace(/_/g,'/');while(b.length%4)b+='=';let raw=atob(b),cs=[];for(let i=0;i+1<raw.length;i+=2)cs.push((raw.charCodeAt(i)<<8)|raw.charCodeAt(i+1));if(!cs.length)return '';let dict=[];for(let i=0;i<256;i++)dict[i]=String.fromCharCode(i);let next=256,old=dict[cs[0]],out=old;for(let i=1;i<cs.length;i++){let code=cs[i],v=dict[code];if(v===undefined&&code===next)v=old+old[0];if(v===undefined)throw Error('QR invalid');out+=v;if(next<65535)dict[next++]=old+v[0];old=v;}return decodeURIComponent(escape(out))},b64=s=>{s=String(s||'').replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)))};
+let q=new URLSearchParams(location.search),rows=[],total=0;if(q.has('d'))try{let o=JSON.parse(lzw(q.get('d'))??b64(q.get('d')));if(Array.isArray(o)&&o[0]===2){rows=(o[1]||[]).map(r=>({maKho:r[0],maFast:r[1],tenSP:r[2],quyCach:r[3],ngaySX:r[4],soGoi:r[5],donVi:r[6],soKg:r[7]}));total=n(o[2]);}else if(Array.isArray(o)&&o[0]===1){rows=(o[7]||[]).map(r=>({maKho:r[0],maFast:r[1],tenSP:r[2],quyCach:r[3],ngaySX:r[4],soGoi:r[5],donVi:r[6],soKg:r[7]}));total=n(o[8]);}else if(o?.products){rows=o.products;total=n(o.totalKg);}}catch(x){}
+if(!rows.length&&q.has('c'))rows=q.get('c').split(',').filter(Boolean).map(x=>{let a=x.split(':');return{maFast:a[0],soGoi:n(a[1]),ngaySX:a[2],donVi:'gói'}});
+if(!rows.length&&q.has('t'))rows=q.get('t').split(',').filter(Boolean).map(x=>{let a=x.split('::');return{maFast:a[1],tenSP:a[2],quyCach:a[3],ngaySX:a[4],soGoi:n(a[5]),donVi:a[6]||'gói'}});
+if(!rows.length&&q.has('data'))try{let o=JSON.parse(b64(q.get('data')));rows=o.products||[];total=n(o.totalKg)}catch(x){}
+if(!rows.length){$('#app').innerHTML='<div class="status">Không đọc được dữ liệu sản phẩm. Vui lòng quét lại mã QR RUNAM.</div>';return;}
+let kg=0,qty=0,body=rows.map((p,i)=>{kg+=n(p.soKg);qty+=n(p.soGoi);return '<tr><td>'+ (i+1)+'</td><td>'+e(p.maKho)+'</td><td>'+e(p.maFast)+'</td><td>'+e(p.tenSP)+'</td><td>'+e(p.quyCach)+'</td><td>'+e(d(p.ngaySX))+'</td><td class="right">'+f(p.soGoi)+' '+e(p.donVi)+'</td><td class="right">'+f(p.soKg)+' kg</td></tr>'}).join('');
+$('#app').innerHTML='<main class="page"><h1>THÔNG TIN SẢN PHẨM</h1><div class="rule"></div><table><thead><tr><th>STT</th><th>Mã kho</th><th>Mã Fast</th><th>Tên sản phẩm</th><th>Quy cách</th><th>Ngày sản xuất</th><th>Số lượng</th><th>Số kg</th></tr></thead><tbody>'+body+'</tbody></table><section class="bottom"><div class="totals">Tổng số lượng: '+f(qty)+'<br>Tổng khối lượng: '+f(total||kg)+' kg</div></section></main>';document.title='THÔNG TIN SẢN PHẨM';})();
 </script></body></html>
